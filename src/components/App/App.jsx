@@ -1,33 +1,66 @@
-import { PureComponent } from 'react';
+import { Component } from 'react';
 import ImageGallery from '../ImageGallery';
 import Searchbar from '../Searchbar';
-import Api from '../../utils/api/apiService';
+import apiService from '../../utils/api/apiService';
 import Modal from '../Modal/Modal';
+import Button from '../Button/Button';
+import scrollTo from '../../utils/scroll/scroll.js';
+import styles from './App.module.css';
 
-class App extends PureComponent {
+class App extends Component {
   state = {
     query: '',
     images: [],
     showModal: false,
     modalPic: '',
     modalAltText: '',
+    currentPage: 1,
+    error: null,
+    isLoading: false,
   };
-  // componentDidMount() {
-  //   Api.query = this.state.query;
-  //   console.log(Api);
-  // }
-  submitHandler = text => {
-    this.setState(() => ({
-      query: text,
+
+  async componentDidUpdate(prevProps, prevState) {
+    if (prevState.query !== this.state.query) {
+      this.setState(() => ({ isLoading: true }));
+      this.getImages();
+    }
+    if (prevState.images.length !== 0) {
+      scrollTo();
+    }
+  }
+
+  getImages = async () => {
+    const { query, currentPage } = this.state;
+    const images = await apiService(query, currentPage);
+    if (!images) {
+      this.setState(() => ({ isLoading: false }));
+      return;
+    }
+    this.setState(prev => ({
+      images: [...prev.images, ...images],
+      currentPage: prev.currentPage + 1,
+      isLoading: false,
     }));
   };
-  componentDidUpdate() {
-    if (Api.query === this.state.query) return;
-    Api.query = this.state.query;
-    Api.fetchRequest().then(res => {
-      this.setState({ images: res.hits });
-    });
-  }
+
+  submitHandler = text => {
+    const { query, images } = this.state;
+    const isSpecificQuery =
+      text.toLowerCase() === query.toLowerCase() && images.length !== 0;
+    if (isSpecificQuery) {
+      alert(
+        'Please enter a more specific word or explore the button "Load more"',
+      );
+      return;
+    }
+    this.setState(() => ({
+      query: text,
+      images: [],
+      currentPage: 1,
+      error: null,
+    }));
+  };
+
   toggleModal = (modalImg, tags) => {
     this.setState(({ showModal }) => ({
       showModal: !showModal,
@@ -36,10 +69,18 @@ class App extends PureComponent {
     }));
   };
 
+  handleClickLoadMore = () => {
+    this.setState(() => ({ isLoading: true }));
+    this.getImages();
+  };
+
   render() {
     return (
-      <div className="App">
-        <Searchbar onSubmit={this.submitHandler} />
+      <div className={styles.App}>
+        <Searchbar
+          onSubmit={this.submitHandler}
+          isLoading={this.state.isLoading}
+        />
         <ImageGallery
           images={this.state.images}
           toggleModal={this.toggleModal}
@@ -49,6 +90,12 @@ class App extends PureComponent {
             src={this.state.modalPic}
             alt={this.state.modalAltText}
             onClose={this.toggleModal}
+          />
+        )}
+        {this.state.images.length !== 0 && (
+          <Button
+            title={'Load more'}
+            handleClickLoadMore={this.handleClickLoadMore}
           />
         )}
       </div>

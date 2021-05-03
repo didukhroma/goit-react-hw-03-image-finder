@@ -1,4 +1,7 @@
 import { Component } from 'react';
+import Loader from '../Loader';
+import styles from './Searchbar.module.css';
+import PropTypes from 'prop-types';
 
 class Searchbar extends Component {
   state = {
@@ -19,28 +22,34 @@ class Searchbar extends Component {
     const { onSubmit } = this.props;
     const { query } = this.state;
     onSubmit(query);
+    this.setState(() => ({ query: '' }));
   };
 
   render() {
     return (
-      <header className="Searchbar">
-        <form className="SearchForm" onSubmit={this.handleSubmit}>
-          <button type="submit" className="SearchForm-button">
-            <span className="SearchForm-button-label">Search</span>
+      <header className={styles.Searchbar}>
+        <form className={styles.SearchForm} onSubmit={this.handleSubmit}>
+          <button type="submit" className={styles.SearchForm__button}>
+            <span className={styles.SearchForm__button__label}>Search</span>
           </button>
 
           <input
-            className="SearchForm-input"
+            className={styles.SearchForm__input}
             type="text"
             autoComplete="off"
             autoFocus
             placeholder="Search images and photos"
             onChange={this.handleChange}
+            value={this.state.query}
           />
+          {this.props.isLoading && <Loader />}
         </form>
       </header>
     );
   }
 }
-
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func,
+  isLoading: PropTypes.bool,
+};
 export default Searchbar;
